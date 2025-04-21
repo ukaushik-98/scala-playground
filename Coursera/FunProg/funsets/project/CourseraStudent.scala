@@ -6,25 +6,17 @@ import scala.util.{Failure, Success, Try}
 import scalaj.http._
 import play.api.libs.json.{Json, JsObject, JsPath}
 
-/** Coursera uses two versions of each assignment. They both have the same
-  * assignment key and part id but have different item ids.
-  *
-  * @param key
-  *   Assignment key
-  * @param partId
-  *   Assignment partId
-  * @param itemId
-  *   Item id of the non premium version
-  * @param premiumItemId
-  *   Item id of the premium version (`None` if the assignment is optional)
-  */
-case class CourseraId(
-    courseId: String,
-    key: String,
-    partId: String,
-    itemId: String,
-    premiumItemId: Option[String]
-)
+/**
+ * Coursera uses two versions of each assignment. They both have the same assignment key and part id but have
+ * different item ids.
+ *
+ * @param key Assignment key
+ * @param partId Assignment partId
+ * @param itemId Item id of the non premium version
+ * @param premiumItemId Item id of the premium version (`None` if the assignment is optional)
+ */
+case class CourseraId(courseId: String, key: String, partId: String, itemId: String, premiumItemId: Option[String])
+
 
 object CourseraStudent extends AutoPlugin {
 
@@ -34,20 +26,18 @@ object CourseraStudent extends AutoPlugin {
 
   object autoImport {
     val options = SettingKey[Map[String, Map[String, String]]]("options")
-    val courseraId = settingKey[CourseraId](
-      "Coursera-specific information identifying the assignment"
-    )
+    val courseraId = settingKey[CourseraId]("Coursera-specific information identifying the assignment")
     // Convenient alias
     type CourseraId = ch.epfl.lamp.CourseraId
     val CourseraId = ch.epfl.lamp.CourseraId
-  }
+  } 
 
   import StudentTasks.autoImport._
   import MOOCSettings.autoImport._
   import autoImport._
 
   override lazy val projectSettings = Seq(
-    submitSetting
+    submitSetting,
   )
 
   /** Task to submit a solution to coursera */
@@ -61,11 +51,7 @@ object CourseraStudent extends AutoPlugin {
     val jar = (Compile / packageSubmissionZip).value
 
     val assignmentDetails =
-      courseraId.?.value.getOrElse(
-        throw new MessageOnlyException(
-          "This assignment can not be submitted to Coursera because the `courseraId` setting is undefined"
-        )
-      )
+      courseraId.?.value.getOrElse(throw new MessageOnlyException("This assignment can not be submitted to Coursera because the `courseraId` setting is undefined"))
     val assignmentKey = assignmentDetails.key
     val courseName =
       course.value match {
@@ -93,11 +79,13 @@ object CourseraStudent extends AutoPlugin {
               |The submit token is NOT YOUR LOGIN PASSWORD.
               |It can be obtained from the assignment page:
               |https://www.coursera.org/learn/$courseName/programming/$itemId
-              |${premiumItemId.fold("") { id =>
-               s"""or (for premium learners):
+              |${
+                premiumItemId.fold("") { id =>
+                  s"""or (for premium learners):
                      |https://www.coursera.org/learn/$courseName/programming/$id
                    """.stripMargin
-             }}
+                }
+              }
           """.stripMargin
         s.log.error(inputErr)
         StudentTasks.failSubmit()
@@ -117,23 +105,16 @@ object CourseraStudent extends AutoPlugin {
           |}""".stripMargin
 
     def postSubmission[T](data: String): Try[HttpResponse[String]] = {
-      val http = Http(
-        "https://www.coursera.org/api/onDemandProgrammingScriptSubmissions.v1"
-      )
+      val http = Http("https://www.coursera.org/api/onDemandProgrammingScriptSubmissions.v1")
       val hs = List(
         ("Cache-Control", "no-cache"),
         ("Content-Type", "application/json")
       )
       s.log.info("Connecting to Coursera...")
-      val response = Try(
-        http
-          .postData(data)
-          .headers(hs)
-          .option(
-            HttpOptions.connTimeout(10000)
-          ) // scalaj default timeout is only 100ms, changing that to 10s
-          .asString
-      ) // kick off HTTP POST
+      val response = Try(http.postData(data)
+                         .headers(hs)
+                         .option(HttpOptions.connTimeout(10000)) // scalaj default timeout is only 100ms, changing that to 10s
+                         .asString) // kick off HTTP POST
       response
     }
 
@@ -148,14 +129,14 @@ object CourseraStudent extends AutoPlugin {
       val code = response.code
       val respBody = response.body
 
-      /* Sample JSON response from Coursera
+       /* Sample JSON response from Coursera
       {
         "message": "Invalid email or token.",
         "details": {
           "learnerMessage": "Invalid email or token."
         }
       }
-       */
+      */
 
       // Success, Coursera responds with 2xx HTTP status code
       if (response.is2xx) {
@@ -166,11 +147,13 @@ object CourseraStudent extends AutoPlugin {
               |
                 |You can see how you scored by going to:
               |https://www.coursera.org/learn/$courseName/programming/$itemId/
-              |${premiumItemId.fold("") { id =>
-               s"""or (for premium learners):
+              |${
+            premiumItemId.fold("") { id =>
+              s"""or (for premium learners):
                  |https://www.coursera.org/learn/$courseName/programming/$id
                        """.stripMargin
-             }}
+            }
+          }
               |and clicking on "My Submission".""".stripMargin
         s.log.info(successfulSubmitMsg)
       }
@@ -226,6 +209,6 @@ object CourseraStudent extends AutoPlugin {
         s.log.error(failedConnectMsg)
     }
 
-  }
+   }
 
 }
