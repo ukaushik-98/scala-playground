@@ -45,7 +45,7 @@ class FunSetSuite extends munit.FunSuite:
    * .ignore annotation.
    */
 
-    test("singleton set one contains one".ignore) {
+    test("singleton set one contains one") {
     
     /**
      * We create a new instance of the "TestSets" trait, this gives us access
