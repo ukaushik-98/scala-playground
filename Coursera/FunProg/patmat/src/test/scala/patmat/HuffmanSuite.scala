@@ -39,6 +39,10 @@ class HuffmanSuite extends munit.FunSuite:
     assertEquals(combine(leaflist), List(Fork(Leaf('e',1),Leaf('t',2),List('e', 't'),3), Leaf('x',4)))
   }
 
+  // test("decode") {
+  //   assertEquals(decodedSecret, List.empty)
+  // }
+
 
   test("decode and encode a very short text should be identity (10pts)") {
     new TestTrees:
